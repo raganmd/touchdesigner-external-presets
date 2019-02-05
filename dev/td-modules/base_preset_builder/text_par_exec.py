@@ -14,6 +14,13 @@ def onPulse(par):
 	
 	elif par.name == 'Savetofile':
 		print("hello")
+	
+	elif par.name == "Recordscenepreset":
+		parent().Add_scene_preset()
+	
+	elif par.name == "Load":
+		parent().Load_scene_preset()
+		print("Load Preset")
 
 	else:
 		pass

@@ -22,8 +22,10 @@ class Presets:
 		self.Json_presets 		= parent().par.Presetsfile
 		self.Project_dir 		= project.folder
 		self.Td_preset_storage 	= parent().par.Tdpresetstorage
-		self.Num_presets 		= len(op(parent().par.Tdpresetstorage).fetch("presets").keys())
+		self.Selected_preset 	= parent().par.Existingpresets
+		self.Num_scene_presets 	= len(op(parent().par.Tdpresetstorage).fetch("presets").keys())
 		print("Presets Init")
+		
 		pass
 
 	def Default_presets_file(self):
@@ -40,6 +42,22 @@ class Presets:
 			new_preset.close()
 			parent().par.Presetsfile = 'data/presets.json'
 			return_msg 		= "Path and presets.json created | {}".format(path)
+		pass
+
+	def Add_scene_preset(self):
+		
+		# construct dict from pars
+		new_pars_dict 	= self.Dict_from_pars(self.MyOp, 'Preset Builder')
+		
+		# add dict to storage in target operator
+		self.Add_preset(new_pars_dict)
+
+		pass
+
+	def Load_scene_preset(self):
+
+		self.Load_preset_editor(self.MyOp ,self.Selected_preset.menuLabels[self.Selected_preset.menuIndex])
+
 		pass
 
 	def Dict_from_pars(self, op_with_custom_pars, par_page):
@@ -104,7 +122,8 @@ class Presets:
 		---------
 		none
 		'''		
-		presets 			= op.Project.fetch("presets")
+		preset_target 		= self.Td_preset_storage.eval()
+		presets 			= op(preset_target).fetch("presets")
 
 		current_preset 		= presets[preset_key]
 
@@ -147,11 +166,15 @@ class Presets:
 		none
 		'''
 
-		current_presets 	= op.Project.fetch("presets")
+		preset_target 		= self.Td_preset_storage.eval()
+		current_presets 	= op(preset_target).fetch("presets")
+
+		preset_name 		= preset_dict['Scenepresetname']
+
 		user_approval 		= 1
 
 		# warning for missing preset name
-		if preset_dict['Presetname'] == '' or None:
+		if preset_name == '' or None:
 			title 			= "Warning - Missing Preset Name"
 			message 		= "It looks like you didn't name your preset"
 			buttons 		= ["okay"] 
@@ -159,7 +182,7 @@ class Presets:
 			user_approval 	= 0
 
 		# warning for duplicate preset entires
-		elif preset_dict['Presetname'] in list(current_presets.keys()):
+		elif preset_name in list(current_presets.keys()):
 			title 			= "Warning - Duplicate Entry"
 			message 		= "Whoa there tiger you got a duplicate entry"
 			buttons 		= ["Cancel", "Update"] 
@@ -171,9 +194,9 @@ class Presets:
 		# clicked to determine if we should update storage
 		if user_approval:
 			# add the new preset to the fetched dictionary and place back in storage.
-			new_preset_name 	= preset_dict['Presetname']
+			new_preset_name 	= preset_name
 			current_presets[new_preset_name] = preset_dict
-			op.Project.store('presets', current_presets)
+			op(preset_target).store('presets', current_presets)
 		
 		else:
 			pass
@@ -199,7 +222,8 @@ class Presets:
 		none
 		'''
 
-		current_presets 	= op.Project.fetch("presets")
+		preset_target 		= self.Td_preset_storage.eval()
+		current_presets 	= op(preset_target).fetch("presets")
 
 		# safety to ensure that the given key exists in the dictionary
 		if preset_key in current_presets.keys():
@@ -212,7 +236,7 @@ class Presets:
 			confirm 			= ui.messageBox(title, message, buttons=buttons)
 			if confirm:
 				del current_presets[preset_key]
-				op.Project.store("presets", current_presets)
+				op(preset_target).store("presets", current_presets)
 			else:
 				pass
 
@@ -313,17 +337,3 @@ class Presets:
 			pass
 
 		pass
-
-class MyDATMenu:
-
-	def __init__(self, myOp):
-		self.MyOp = myOp
-		pass
-
-	@property		
-	def menuNames(self):
-		return [x.val for x in op(self.MyOp).col('name')][1:]
-
-	@property
-	def menuLabels(self):
-		return [x.val for x in op(self.MyOp).col('label')][1:]
