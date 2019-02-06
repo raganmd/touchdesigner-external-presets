@@ -15,7 +15,7 @@ class Presets:
 		Notes
 		---------------
 		Your notes about the class go here
- 	'''
+ 	''' 	
 
 	def __init__(self, myOp):
 		self.MyOp 				= myOp
@@ -23,9 +23,16 @@ class Presets:
 		self.Project_dir 		= project.folder
 		self.Td_preset_storage 	= parent().par.Tdpresetstorage
 		self.Selected_preset 	= parent().par.Existingpresets
-		self.Num_scene_presets 	= len(op(parent().par.Tdpresetstorage).fetch("presets").keys())
+		self.Num_scene_presets 	= tdu.Dependency(0)
+		self.Update_num_scenes()
+		self.P1_deck			= parent().par.P1deck
+		self.P2_deck			= parent().par.P2deck
 		print("Presets Init")
 		
+		pass
+
+	def Update_num_scenes(self):
+		self.Num_scene_presets.val = len(op(parent().par.Tdpresetstorage).fetch("presets")['scenes'].keys())
 		pass
 
 	def Default_presets_file(self):
@@ -52,12 +59,36 @@ class Presets:
 		# add dict to storage in target operator
 		self.Add_preset(new_pars_dict)
 
+		# update list
+		self.Update_num_scenes()
+
 		pass
 
 	def Load_scene_preset(self):
 
-		self.Load_preset_editor(self.MyOp ,self.Selected_preset.menuLabels[self.Selected_preset.menuIndex])
+		current_preset = self.Load_preset_editor(self.MyOp, 
+												self.Selected_preset.menuLabels[self.Selected_preset.menuIndex])
+		self.Set_decks()
+		pass
 
+	def Set_decks(self):
+		
+		# current Scenes from builder
+		p1_scene 	= parent().par.P1scene.eval()
+		p2_scene 	= parent().par.P2scene.eval()
+
+		# Decks
+		Deck_p1 	= self.P1_deck.eval()
+		Deck_p2 	= self.P2_deck.eval()
+
+		# call deck pars 
+		op(Deck_p1).Change_deck(p1_scene)
+		op(Deck_p2).Change_deck(p2_scene)
+		pass
+
+	def Load_presets_file(self):
+		presets_dict = self.Load_json('{}/{}'.format( project.folder, parent().par.Presetsfile.eval()))
+		op(self.Td_preset_storage).store('presets', presets_dict)
 		pass
 
 	def Dict_from_pars(self, op_with_custom_pars, par_page):
@@ -123,7 +154,7 @@ class Presets:
 		none
 		'''		
 		preset_target 		= self.Td_preset_storage.eval()
-		presets 			= op(preset_target).fetch("presets")
+		presets 			= op(preset_target).fetch("presets")["scenes"]
 
 		current_preset 		= presets[preset_key]
 
@@ -139,7 +170,7 @@ class Presets:
 			#print( builder_op.pars(keys) )
 			builder_op.pars(keys)[0].val = values
 
-		pass
+		return current_preset.items()
 
 	def Add_preset( self, preset_dict ):
 		'''Adds a preset to the strage dictionary "presets".
@@ -168,7 +199,6 @@ class Presets:
 
 		preset_target 		= self.Td_preset_storage.eval()
 		current_presets 	= op(preset_target).fetch("presets")
-
 		preset_name 		= preset_dict['Scenepresetname']
 
 		user_approval 		= 1
@@ -195,7 +225,7 @@ class Presets:
 		if user_approval:
 			# add the new preset to the fetched dictionary and place back in storage.
 			new_preset_name 	= preset_name
-			current_presets[new_preset_name] = preset_dict
+			current_presets["scenes"][new_preset_name] = preset_dict
 			op(preset_target).store('presets', current_presets)
 		
 		else:
@@ -221,12 +251,12 @@ class Presets:
 		---------
 		none
 		'''
+		print("Deleting")
 
 		preset_target 		= self.Td_preset_storage.eval()
 		current_presets 	= op(preset_target).fetch("presets")
-
 		# safety to ensure that the given key exists in the dictionary
-		if preset_key in current_presets.keys():
+		if preset_key in current_presets['scenes'].keys():
 
 			title 				= "WARNING DELTING PRESET"
 			message 			= "You're about to delete the preset {}".format(preset_key)
@@ -235,8 +265,9 @@ class Presets:
 			# confirmation message to ensure that the user wants to delet the preset
 			confirm 			= ui.messageBox(title, message, buttons=buttons)
 			if confirm:
-				del current_presets[preset_key]
+				del current_presets['scenes'][preset_key]
 				op(preset_target).store("presets", current_presets)
+				self.Update_num_scenes()
 			else:
 				pass
 
@@ -266,7 +297,7 @@ class Presets:
 								returns a nonetype object and logs an error message if the
 								file cannot be found.
 		'''
-		target_file 		= project.folder + target_path
+		target_file 		= target_path
 		json_dict			= None
 
 		# check to ensure the file exists before attempting to open
@@ -305,10 +336,10 @@ class Presets:
 		'''
 
 		# construct a path to our preset file
-		json_presets 		= project.folder + self.Presets
+		json_presets 		= self.Json_presets.eval()
 
 		# grab presets from storage
-		current_presets 	= op.Project.fetch("presets")
+		current_presets 	= op(parent().par.Tdpresetstorage).fetch("presets")
 
 		# dict - JSON
 		preset_dumps 		= json.dumps( current_presets, 

@@ -13,15 +13,21 @@ def onPulse(par):
 		parent().Default_presets_file()
 	
 	elif par.name == 'Savetofile':
-		print("hello")
+		parent().Save_presets()
+
+	elif par.name == "Loadfromfile":
+		parent().Load_presets_file()
 	
 	elif par.name == "Recordscenepreset":
 		parent().Add_scene_preset()
 	
+	elif par.name == "Delete":
+		parent().Del_preset(parent().par.Existingpresets.menuLabels[parent().par.Existingpresets.menuIndex])
+	
 	elif par.name == "Load":
 		parent().Load_scene_preset()
 		print("Load Preset")
-
+	
 	else:
 		pass
 	return
